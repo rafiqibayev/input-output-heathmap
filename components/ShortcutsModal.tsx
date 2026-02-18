@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X, Keyboard } from 'lucide-react';
 
@@ -5,6 +6,13 @@ interface ShortcutsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+// Fixed: Moved Kbd helper component outside and made children optional to satisfy TypeScript's strict checks during mapping
+const Kbd = ({ children }: { children?: React.ReactNode }) => (
+  <kbd className="px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-md text-xs font-mono font-bold text-neutral-600 dark:text-neutral-300 shadow-sm min-w-[24px] text-center inline-block">
+    {children}
+  </kbd>
+);
 
 export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -25,12 +33,6 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
     { key: 'Space', action: 'Toggle Output' },
     { key: 'Enter', action: 'Save Entry' },
   ];
-
-  const Kbd = ({ children }: { children: React.ReactNode }) => (
-    <kbd className="px-2 py-1 bg-gray-100 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-md text-xs font-mono font-bold text-neutral-600 dark:text-neutral-300 shadow-sm min-w-[24px] text-center inline-block">
-      {children}
-    </kbd>
-  );
 
   return (
     <div 
