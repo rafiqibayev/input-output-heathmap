@@ -15,11 +15,12 @@ interface UseTrackerDataReturn {
   setHours: (dateString: string, hours: number) => void;
   toggleOutput: (dateString: string) => void;
   updateConfig: (key: keyof AppConfig, value: string | number | ViewMode | ThemeColor) => void;
+  exportData: () => string;
+  importData: (jsonString: string) => boolean;
   stats: {
     grindDays: number;
     outputsShipped: number;
     totalHours: number;
-    maxHoursRecord: number;
   };
 }
 
@@ -106,16 +107,48 @@ export const useTrackerData = (): UseTrackerDataReturn => {
     setConfig((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  const exportData = useCallback(() => {
+    const exportObject = {
+      version: 1,
+      timestamp: new Date().toISOString(),
+      config,
+      data
+    };
+    return JSON.stringify(exportObject, null, 2);
+  }, [config, data]);
+
+  const importData = useCallback((jsonString: string) => {
+    try {
+      const parsed = JSON.parse(jsonString);
+      
+      // Basic validation
+      if (!parsed.data || !parsed.config) {
+        return false;
+      }
+
+      // Check structure of config
+      const requiredConfigKeys = ['inputLabel', 'outputLabel', 'dailyGoal'];
+      const hasKeys = requiredConfigKeys.every(k => k in parsed.config);
+      
+      if (!hasKeys) return false;
+
+      // Update state - this will trigger useEffects to save to localStorage
+      setConfig(prev => ({ ...prev, ...parsed.config }));
+      setData(parsed.data);
+      return true;
+    } catch (e) {
+      console.error("Import failed", e);
+      return false;
+    }
+  }, []);
+
   const stats = useMemo(() => {
     const entries = Object.values(data) as DailyEntry[];
     const grindDays = entries.filter((d: DailyEntry) => d.hours >= config.dailyGoal).length;
     const outputsShipped = entries.filter((d: DailyEntry) => d.output).length;
     const totalHours = entries.reduce((acc, d: DailyEntry) => acc + (d.hours || 0), 0);
-    
-    const hoursArray = entries.map(d => d.hours || 0);
-    const maxHoursRecord = Math.max(...hoursArray, config.dailyGoal, 1);
 
-    return { grindDays, outputsShipped, totalHours, maxHoursRecord };
+    return { grindDays, outputsShipped, totalHours };
   }, [data, config.dailyGoal]);
 
   return {
@@ -124,6 +157,8 @@ export const useTrackerData = (): UseTrackerDataReturn => {
     setHours,
     toggleOutput,
     updateConfig,
+    exportData,
+    importData,
     stats
   };
 };

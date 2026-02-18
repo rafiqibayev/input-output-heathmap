@@ -8,9 +8,18 @@ interface HeaderProps {
   onUpdateConfig: (key: keyof AppConfig, value: string | number | ViewMode | ThemeColor) => void;
   themeMode: ThemeMode;
   onToggleTheme: () => void;
+  onImportClick: () => void;
+  onExportClick: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ config, onUpdateConfig, themeMode, onToggleTheme }) => {
+export const Header: React.FC<HeaderProps> = ({ 
+  config, 
+  onUpdateConfig, 
+  themeMode, 
+  onToggleTheme,
+  onImportClick,
+  onExportClick
+}) => {
   
   const getThemeIcon = () => {
     switch (themeMode) {
@@ -26,7 +35,23 @@ export const Header: React.FC<HeaderProps> = ({ config, onUpdateConfig, themeMod
     <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between py-8">
       <div className="flex justify-between items-start md:block w-full md:w-auto">
         <div>
-          <h1 className="text-2xl font-bold tracking-tighter mb-1 dark:text-white uppercase">Input / Output</h1>
+          <h1 className="text-2xl font-bold tracking-tighter mb-1 dark:text-white uppercase select-none flex items-center">
+             <span 
+               onClick={onImportClick}
+               className="cursor-pointer hover:text-neutral-500 dark:hover:text-neutral-400 transition-colors"
+               title="Import Data from JSON"
+             >
+               Input
+             </span>
+             <span className="mx-2 text-gray-300 dark:text-neutral-700">/</span>
+             <span 
+               onClick={onExportClick}
+               className="cursor-pointer hover:text-neutral-500 dark:hover:text-neutral-400 transition-colors"
+               title="Export Data to Clipboard"
+             >
+               Output
+             </span>
+          </h1>
           <p className="text-xs text-gray-400 dark:text-neutral-500 uppercase tracking-widest font-bold">2026 Visualization</p>
         </div>
         

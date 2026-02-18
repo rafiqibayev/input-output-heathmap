@@ -1,38 +1,61 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { 
   eachDayOfInterval, 
   endOfWeek, 
   format, 
   isSameYear, 
-  startOfWeek, 
+  startOfWeek,
+  isSameDay
 } from 'date-fns';
 import { DayCell } from './DayCell';
-import { EditModal } from './EditModal';
 import { START_DATE, END_DATE } from '../constants';
 import { TrackerData, DayCellData, AppConfig } from '../types';
 
 interface GridProps {
   data: TrackerData;
   config: AppConfig;
-  maxHoursRecord: number;
-  onSetHours: (dateString: string, hours: number) => void;
-  onToggleOutput: (dateString: string) => void;
+  onCellClick: (data: DayCellData) => void;
 }
+
+const WeekdayHeader: React.FC = () => {
+  const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  
+  return (
+    <div className="grid grid-cols-7 md:grid-cols-14 gap-1 w-full mb-2 sticky top-0 bg-white dark:bg-neutral-950 z-20 py-2 border-b border-gray-100 dark:border-neutral-800">
+      {/* First Week Labels (Always Visible) */}
+      {days.map((d, i) => (
+        <div key={`d1-${i}`} className="text-[10px] text-center font-bold text-gray-400 dark:text-neutral-600 select-none">
+          {d}
+        </div>
+      ))}
+      
+      {/* Second Week Labels (Visible on Tablet+) */}
+      {days.map((d, i) => (
+        <div key={`d2-${i}`} className="hidden md:block text-[10px] text-center font-bold text-gray-400 dark:text-neutral-600 select-none">
+          {d}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const VerticalGrid: React.FC<{ 
   data: TrackerData; 
   config: AppConfig;
-  maxHoursRecord: number;
   onCellClick: (data: DayCellData) => void;
-}> = ({ data, config, maxHoursRecord, onCellClick }) => {
+}> = ({ data, config, onCellClick }) => {
   const allDays = useMemo(() => {
     const start = startOfWeek(START_DATE, { weekStartsOn: 1 });
     const end = endOfWeek(END_DATE, { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
   }, []);
 
+  // Capture today's date once per render
+  const today = new Date();
+
   return (
     <div className="w-full flex flex-col pb-12">
+      <WeekdayHeader />
       <div className="grid grid-cols-7 md:grid-cols-14 gap-1 w-full">
         {allDays.map((date) => {
           const dateString = format(date, 'yyyy-MM-dd');
@@ -43,12 +66,14 @@ const VerticalGrid: React.FC<{
             isTargetYear,
             entry: data[dateString]
           };
+          const isToday = isSameDay(date, today);
+
           return (
             <div key={dateString} className="aspect-square w-full">
               <DayCell 
                 data={cellData} 
-                config={config} 
-                maxHoursRecord={maxHoursRecord} 
+                config={config}
+                isToday={isToday}
                 onClick={onCellClick} 
               />
             </div>
@@ -62,9 +87,8 @@ const VerticalGrid: React.FC<{
 const HorizontalGrid: React.FC<{
   data: TrackerData;
   config: AppConfig;
-  maxHoursRecord: number;
   onCellClick: (data: DayCellData) => void;
-}> = ({ data, config, maxHoursRecord, onCellClick }) => {
+}> = ({ data, config, onCellClick }) => {
   const gridWeeks = useMemo(() => {
     const matrixStart = startOfWeek(START_DATE, { weekStartsOn: 1 }); 
     const matrixEnd = endOfWeek(END_DATE, { weekStartsOn: 1 });
@@ -88,17 +112,19 @@ const HorizontalGrid: React.FC<{
     return weeks;
   }, [data]);
 
+  const today = new Date();
+
   return (
-    <div className="w-full flex flex-col">
-       <div className="flex w-full gap-[2px]"> 
+    <div className="w-full flex flex-col overflow-x-auto pb-4">
+       <div className="flex w-full gap-[2px] min-w-max"> 
           {gridWeeks.map((week, weekIndex) => (
-              <div key={weekIndex} className="flex-1 flex flex-col gap-[2px]">
+              <div key={weekIndex} className="flex-1 flex flex-col gap-[2px] w-4 lg:w-5">
               {week.map((dayData) => (
                   <div key={dayData.dateString} className="w-full aspect-square">
                     <DayCell 
                       data={dayData} 
-                      config={config} 
-                      maxHoursRecord={maxHoursRecord} 
+                      config={config}
+                      isToday={isSameDay(dayData.date, today)}
                       onClick={onCellClick} 
                     />
                   </div>
@@ -110,40 +136,24 @@ const HorizontalGrid: React.FC<{
   );
 };
 
-export const Grid: React.FC<GridProps> = ({ data, config, maxHoursRecord, onSetHours, onToggleOutput }) => {
-  const [selectedDay, setSelectedDay] = useState<DayCellData | null>(null);
-
-  const handleCellClick = (cellData: DayCellData) => {
-    setSelectedDay(cellData);
-  };
-
-  const closeModal = () => setSelectedDay(null);
-
+export const Grid: React.FC<GridProps> = ({ data, config, onCellClick }) => {
   return (
     <div className="w-full">
       <div className="block xl:hidden">
-        <VerticalGrid data={data} config={config} maxHoursRecord={maxHoursRecord} onCellClick={handleCellClick} />
+        <VerticalGrid 
+          data={data} 
+          config={config} 
+          onCellClick={onCellClick} 
+        />
       </div>
 
       <div className="hidden xl:block">
-        <HorizontalGrid data={data} config={config} maxHoursRecord={maxHoursRecord} onCellClick={handleCellClick} />
-      </div>
-
-      {selectedDay && (
-        <EditModal
-          isOpen={!!selectedDay}
-          onClose={closeModal}
-          date={selectedDay.date}
-          dateString={selectedDay.dateString}
-          inputLabel={config.inputLabel}
-          outputLabel={config.outputLabel}
-          hours={data[selectedDay.dateString]?.hours || 0}
-          hasOutput={!!data[selectedDay.dateString]?.output}
-          theme={config.theme}
-          onSetHours={onSetHours}
-          onToggleOutput={onToggleOutput}
+        <HorizontalGrid 
+          data={data} 
+          config={config} 
+          onCellClick={onCellClick} 
         />
-      )}
+      </div>
     </div>
   );
 };

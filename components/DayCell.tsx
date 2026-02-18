@@ -6,11 +6,11 @@ import { THEME_COLORS } from '../constants';
 interface DayCellProps {
   data: DayCellData;
   config: AppConfig;
-  maxHoursRecord: number;
+  isToday: boolean;
   onClick: (data: DayCellData) => void;
 }
 
-export const DayCell: React.FC<DayCellProps> = React.memo(({ data, config, maxHoursRecord, onClick }) => {
+export const DayCell: React.FC<DayCellProps> = React.memo(({ data, config, isToday, onClick }) => {
   const { isTargetYear, entry, date } = data;
   const { dailyGoal, viewMode, theme } = config;
 
@@ -40,14 +40,43 @@ export const DayCell: React.FC<DayCellProps> = React.memo(({ data, config, maxHo
         textClass = 'text-gray-500 dark:text-neutral-600 font-medium';
       }
     } else {
-      // INTENSITY MODE: Relative Heatmap logic
+      // INTENSITY MODE: Tiered logic based on Daily Goal
       useIntensityOverlay = true;
-      const ratio = hours / maxHoursRecord;
-      intensityOpacity = 0.2 + (ratio * 0.8);
+      const effectiveGoal = dailyGoal > 0 ? dailyGoal : 1;
+
+      if (hours < effectiveGoal) {
+        intensityOpacity = 0.2; // Level 1 (Effort)
+      } else if (hours < effectiveGoal * 2) {
+        intensityOpacity = 0.4; // Level 2 (Goal Met)
+      } else if (hours < effectiveGoal * 3) {
+        intensityOpacity = 0.6; // Level 3 (Double Down)
+      } else if (hours < effectiveGoal * 4) {
+        intensityOpacity = 0.8; // Level 4 (Grind)
+      } else {
+        intensityOpacity = 1.0; // Level 5 (Monster)
+      }
       
       textClass = intensityOpacity > 0.5 ? 'text-white dark:text-neutral-900' : 'text-neutral-600 dark:text-neutral-300';
       textClass += ' font-bold relative z-10';
       bgClass = 'bg-gray-100 dark:bg-neutral-900 hover:bg-gray-200 dark:hover:bg-neutral-800';
+    }
+  }
+
+  // Ring Logic (Today only)
+  let ringClass = '';
+  if (isToday) {
+    // Force bold text for today
+    if (!textClass.includes('font-bold')) {
+        textClass = textClass.replace('font-medium', 'font-bold');
+        if (!textClass.includes('font-bold')) textClass += ' font-bold';
+    }
+
+    if (hasOutput) {
+        // High contrast ring for shipped output
+        ringClass = 'ring-2 ring-inset ring-white dark:ring-white';
+    } else {
+        // Theme color ring for other states
+        ringClass = `ring-2 ring-inset ${currentTheme.ring}`;
     }
   }
 
@@ -60,12 +89,12 @@ export const DayCell: React.FC<DayCellProps> = React.memo(({ data, config, maxHo
   return (
     <button
       onClick={() => isTargetYear && onClick(data)}
-      title={`${data.dateString}: ${hours}h ${hasOutput ? '(Shipped)' : ''}`}
+      title={`${data.dateString}: ${hours}h ${hasOutput ? '(Shipped)' : ''} ${isToday ? '(Today)' : ''}`}
       className={`
         relative w-full h-full rounded-[1px] md:rounded-sm 
         flex items-center justify-center overflow-hidden
         transition-all duration-200 active:scale-95
-        ${bgClass} ${visibilityClass}
+        ${bgClass} ${visibilityClass} ${ringClass}
       `}
     >
         {useIntensityOverlay && (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X, Check, Minus, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { ThemeColor } from '../types';
@@ -31,7 +31,68 @@ export const EditModal: React.FC<EditModalProps> = ({
   onSetHours,
   onToggleOutput
 }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Focus input on open
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 1. Enter: Save & Close (Always)
+      if (e.key === 'Enter') {
+        onClose();
+        e.preventDefault();
+        return;
+      }
+
+      // 2. Escape: Close (Always)
+      if (e.key === 'Escape') {
+        onClose();
+        e.preventDefault();
+        return;
+      }
+
+      const isInputFocused = document.activeElement === inputRef.current;
+
+      // 3. Arrows: Adjust Hours
+      if (e.key === 'ArrowUp') {
+        if (!isInputFocused) {
+           onSetHours(dateString, Math.max(0, Math.min(24, hours + 0.5)));
+           e.preventDefault();
+        }
+      }
+      
+      if (e.key === 'ArrowDown') {
+        if (!isInputFocused) {
+           onSetHours(dateString, Math.max(0, Math.min(24, hours - 0.5)));
+           e.preventDefault();
+        }
+      }
+
+      // 4. Space: Toggle Output
+      // Even if input is focused, since it's a number input, space doesn't type a space.
+      // It's safe to toggle output for better UX.
+      if (e.key === ' ') {
+        onToggleOutput(dateString);
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, dateString, hours, onSetHours, onToggleOutput]);
+
   if (!isOpen) return null;
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   const adjustHours = (delta: number) => {
     onSetHours(dateString, Math.max(0, Math.min(24, hours + delta)));
@@ -40,10 +101,12 @@ export const EditModal: React.FC<EditModalProps> = ({
   const currentTheme = THEME_COLORS[theme] || THEME_COLORS.red;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-sm"
+      onClick={handleBackdropClick}
+    >
       <div 
         className="w-full max-w-sm bg-white dark:bg-neutral-950 border-2 border-neutral-900 dark:border-neutral-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] p-6 relative"
-        onClick={(e) => e.stopPropagation()}
       >
         <button 
           onClick={onClose}
@@ -65,12 +128,14 @@ export const EditModal: React.FC<EditModalProps> = ({
               <button 
                 onClick={() => adjustHours(-0.5)}
                 className="p-2 border-2 border-neutral-900 dark:border-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors"
+                tabIndex={-1}
               >
                 <Minus className="w-4 h-4 dark:text-white" />
               </button>
               
               <div className="flex-1 text-center">
                 <input 
+                  ref={inputRef}
                   type="number" 
                   value={hours}
                   onChange={(e) => onSetHours(dateString, parseFloat(e.target.value) || 0)}
@@ -84,6 +149,7 @@ export const EditModal: React.FC<EditModalProps> = ({
               <button 
                 onClick={() => adjustHours(0.5)}
                 className="p-2 border-2 border-neutral-900 dark:border-neutral-200 hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors"
+                tabIndex={-1}
               >
                 <Plus className="w-4 h-4 dark:text-white" />
               </button>
