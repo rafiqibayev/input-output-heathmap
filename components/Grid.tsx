@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { 
   eachDayOfInterval, 
   endOfWeek, 
@@ -8,6 +8,7 @@ import {
   isSameDay
 } from 'date-fns';
 import { DayCell } from './DayCell';
+import { GridTooltip } from './GridTooltip';
 import { START_DATE, END_DATE } from '../constants';
 import { TrackerData, DayCellData, AppConfig } from '../types';
 
@@ -43,7 +44,9 @@ const VerticalGrid: React.FC<{
   data: TrackerData; 
   config: AppConfig;
   onCellClick: (data: DayCellData) => void;
-}> = ({ data, config, onCellClick }) => {
+  onCellMouseEnter: (e: React.MouseEvent, data: DayCellData) => void;
+  onCellMouseLeave: () => void;
+}> = ({ data, config, onCellClick, onCellMouseEnter, onCellMouseLeave }) => {
   const allDays = useMemo(() => {
     const start = startOfWeek(START_DATE, { weekStartsOn: 1 });
     const end = endOfWeek(END_DATE, { weekStartsOn: 1 });
@@ -75,6 +78,8 @@ const VerticalGrid: React.FC<{
                 config={config}
                 isToday={isToday}
                 onClick={onCellClick} 
+                onMouseEnter={onCellMouseEnter}
+                onMouseLeave={onCellMouseLeave}
               />
             </div>
           );
@@ -88,7 +93,9 @@ const HorizontalGrid: React.FC<{
   data: TrackerData;
   config: AppConfig;
   onCellClick: (data: DayCellData) => void;
-}> = ({ data, config, onCellClick }) => {
+  onCellMouseEnter: (e: React.MouseEvent, data: DayCellData) => void;
+  onCellMouseLeave: () => void;
+}> = ({ data, config, onCellClick, onCellMouseEnter, onCellMouseLeave }) => {
   const gridWeeks = useMemo(() => {
     const matrixStart = startOfWeek(START_DATE, { weekStartsOn: 1 }); 
     const matrixEnd = endOfWeek(END_DATE, { weekStartsOn: 1 });
@@ -126,6 +133,8 @@ const HorizontalGrid: React.FC<{
                       config={config}
                       isToday={isSameDay(dayData.date, today)}
                       onClick={onCellClick} 
+                      onMouseEnter={onCellMouseEnter}
+                      onMouseLeave={onCellMouseLeave}
                     />
                   </div>
               ))}
@@ -137,13 +146,30 @@ const HorizontalGrid: React.FC<{
 };
 
 export const Grid: React.FC<GridProps> = ({ data, config, onCellClick }) => {
+  const [tooltipState, setTooltipState] = useState<{ data: DayCellData; x: number; y: number } | null>(null);
+
+  const handleCellMouseEnter = useCallback((e: React.MouseEvent, cellData: DayCellData) => {
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    setTooltipState({
+        data: cellData,
+        x: rect.left + rect.width / 2,
+        y: rect.top
+    });
+  }, []);
+
+  const handleCellMouseLeave = useCallback(() => {
+    setTooltipState(null);
+  }, []);
+
   return (
-    <div className="w-full">
+    <div className="w-full relative">
       <div className="block xl:hidden">
         <VerticalGrid 
           data={data} 
           config={config} 
           onCellClick={onCellClick} 
+          onCellMouseEnter={handleCellMouseEnter}
+          onCellMouseLeave={handleCellMouseLeave}
         />
       </div>
 
@@ -152,8 +178,18 @@ export const Grid: React.FC<GridProps> = ({ data, config, onCellClick }) => {
           data={data} 
           config={config} 
           onCellClick={onCellClick} 
+          onCellMouseEnter={handleCellMouseEnter}
+          onCellMouseLeave={handleCellMouseLeave}
         />
       </div>
+
+      {tooltipState && (
+        <GridTooltip 
+            data={tooltipState.data} 
+            position={{ x: tooltipState.x, y: tooltipState.y }} 
+            theme={config.theme} 
+        />
+      )}
     </div>
   );
 };
