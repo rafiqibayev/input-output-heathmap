@@ -281,7 +281,6 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
                 stroke="#737373" 
                 strokeDasharray="3 3" 
                 strokeWidth={1}
-                isFront={false} 
             />
           )}
 
