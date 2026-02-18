@@ -7,7 +7,7 @@ Based on the GitHub contribution graph, but designed for creators who need to ba
 
 <img width="1512" height="982" alt="darkmode" src="https://github.com/user-attachments/assets/83dc22f8-f62d-44af-b0ab-ab1444d20d2a" />
 
-Try it out: https://input-output-tracker.vercel.app/
+Try it out: https://input-output-heathmap.vercel.app/
 
 ## The Logic
 
@@ -32,4 +32,4 @@ It's a simple visualization of your year (2026):
 
 ## Try it out
 
-https://input-output-tracker.vercel.app/
+https://input-output-heathmap.vercel.app/
