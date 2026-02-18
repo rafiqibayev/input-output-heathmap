@@ -22,10 +22,10 @@ export const THEME_COLORS = {
 
 export const THEME_HEX = {
   red: '#dc2626',
-  orange: '#f97316',
-  amber: '#fbbf24',
-  green: '#10b981',
-  blue: '#3b82f6',
-  violet: '#8b5cf6',
-  pink: '#ec4899',
+  orange: '#ea580c',
+  amber: '#d97706',
+  green: '#16a34a',
+  blue: '#2563eb',
+  violet: '#7c3aed',
+  pink: '#db2777',
 };
