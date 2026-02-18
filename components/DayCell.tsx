@@ -8,9 +8,11 @@ interface DayCellProps {
   config: AppConfig;
   isToday: boolean;
   onClick: (data: DayCellData) => void;
+  onMouseEnter: (e: React.MouseEvent, data: DayCellData) => void;
+  onMouseLeave: () => void;
 }
 
-export const DayCell: React.FC<DayCellProps> = React.memo(({ data, config, isToday, onClick }) => {
+export const DayCell: React.FC<DayCellProps> = React.memo(({ data, config, isToday, onClick, onMouseEnter, onMouseLeave }) => {
   const { isTargetYear, entry, date } = data;
   const { dailyGoal, viewMode, theme } = config;
 
@@ -89,7 +91,8 @@ export const DayCell: React.FC<DayCellProps> = React.memo(({ data, config, isTod
   return (
     <button
       onClick={() => isTargetYear && onClick(data)}
-      title={`${data.dateString}: ${hours}h ${hasOutput ? '(Shipped)' : ''} ${isToday ? '(Today)' : ''}`}
+      onMouseEnter={(e) => isTargetYear && onMouseEnter(e, data)}
+      onMouseLeave={onMouseLeave}
       className={`
         relative w-full h-full rounded-[1px] md:rounded-sm 
         flex items-center justify-center overflow-hidden
