@@ -22,15 +22,22 @@ interface StatsChartProps {
 const CustomTooltip = ({ active, payload, themeHex, viewMode }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
-    const label = viewMode === 'weekly' 
-      ? `Week of ${format(new Date(data.date), 'MMM d')}`
-      : data.displayDate;
+    let label = data.displayDate;
+    let valuePrefix = 'Effort: ';
+    
+    if (viewMode === 'weekly') {
+       label = `Week of ${format(new Date(data.date), 'MMM d')}`;
+       valuePrefix = 'Total: ';
+    } else if (viewMode === 'build') {
+       label = `${data.displayDate}`;
+       valuePrefix = 'Project Scope: ';
+    }
       
     return (
       <div className="bg-neutral-900 border border-neutral-700 p-3 rounded-sm shadow-xl z-50">
         <p className="text-white text-xs font-bold font-mono mb-1">{label}</p>
         <p className="text-gray-300 text-xs font-mono">
-          {viewMode === 'weekly' ? 'Total: ' : 'Effort: '}
+          {valuePrefix}
           <span className="text-white font-bold">{data.hours}h</span>
         </p>
         {data.output && (
@@ -46,7 +53,7 @@ const CustomTooltip = ({ active, payload, themeHex, viewMode }: any) => {
 
 export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
   const [isMobile, setIsMobile] = useState(false);
-  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly' | 'build'>('daily');
   const themeHex = THEME_HEX[theme] || THEME_HEX.red;
 
   useEffect(() => {
@@ -58,13 +65,12 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
 
   // Process Weekly Data
   const weeklyData = useMemo(() => {
-    if (viewMode === 'daily') return [];
+    if (viewMode !== 'weekly') return [];
 
     const weeks: ChartDataPoint[] = [];
     let currentWeekStart = startOfWeek(new Date(data[0].date), { weekStartsOn: 1 });
     let currentWeekHours = 0;
     let currentWeekOutput = false;
-    let daysInWeek = 0;
     
     // Calculate global weekly average based on past weeks
     const today = startOfDay(new Date());
@@ -75,8 +81,6 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
     const groupedWeeks: { date: Date; hours: number; output: boolean; isFuture: boolean }[] = [];
     
     // We iterate through all days to group them
-    let weekBuffer: { hours: number; output: boolean }[] = [];
-    
     data.forEach((day) => {
       const dayDate = new Date(day.date);
       const weekStart = startOfWeek(dayDate, { weekStartsOn: 1 });
@@ -87,19 +91,17 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
           date: currentWeekStart,
           hours: currentWeekHours,
           output: currentWeekOutput,
-          isFuture: isAfter(currentWeekStart, today) // Simplification: if week starts in future
+          isFuture: isAfter(currentWeekStart, today)
         });
         
         // Reset
         currentWeekStart = weekStart;
         currentWeekHours = 0;
         currentWeekOutput = false;
-        weekBuffer = [];
       }
       
       currentWeekHours += day.hours;
       if (day.output) currentWeekOutput = true;
-      weekBuffer.push(day);
     });
 
     // Push last week
@@ -133,8 +135,34 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
 
   }, [data, viewMode]);
 
+  // Process Build (Accumulated) Data
+  const buildData = useMemo(() => {
+    if (viewMode !== 'build') return [];
+
+    let currentProjectHours = 0;
+    
+    return data.map(day => {
+        // Accumulate
+        currentProjectHours += day.hours;
+        
+        const point = {
+            ...day,
+            hours: parseFloat(currentProjectHours.toFixed(1))
+        };
+        
+        // Reset after shipping
+        if (day.output) {
+            currentProjectHours = 0;
+        }
+        
+        return point;
+    });
+  }, [data, viewMode]);
+
   const chartData = useMemo(() => {
-    const sourceData = viewMode === 'daily' ? data : weeklyData;
+    let sourceData = data;
+    if (viewMode === 'weekly') sourceData = weeklyData;
+    if (viewMode === 'build') sourceData = buildData;
 
     if (!isMobile) return sourceData;
 
@@ -144,14 +172,14 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
     
     if (todayIndex === -1) return sourceData;
 
-    // Daily: 30 days. Weekly: 12 weeks (~3 months)
-    const lookback = viewMode === 'daily' ? 29 : 11;
+    // Daily/Build: 30 days. Weekly: 12 weeks (~3 months)
+    const lookback = viewMode === 'weekly' ? 11 : 29;
     
     const startIndex = Math.max(0, todayIndex - lookback);
     const endIndex = Math.min(sourceData.length, todayIndex + 1);
     
     return sourceData.slice(startIndex, endIndex);
-  }, [data, weeklyData, isMobile, viewMode]);
+  }, [data, weeklyData, buildData, isMobile, viewMode]);
 
   // Identify Output dates for reference lines
   const outputDates = useMemo(() => {
@@ -165,7 +193,7 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
        <div className="flex justify-between items-end mb-2 px-2">
          <div className="flex items-center gap-4">
              <h3 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-neutral-500">
-               {isMobile ? (viewMode === 'daily' ? '30 Day Sprint' : '12 Week Sprint') : '2026 Trajectory'}
+               {isMobile ? (viewMode === 'weekly' ? '12 Week Sprint' : '30 Day Sprint') : '2026 Trajectory'}
              </h3>
              
              {/* Toggle */}
@@ -182,14 +210,22 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
                 >
                     [ WEEKLY ]
                 </button>
+                <button 
+                  onClick={() => setViewMode('build')}
+                  className={`${viewMode === 'build' ? 'text-neutral-900 dark:text-white' : 'text-gray-400 dark:text-neutral-600 hover:text-neutral-500'} transition-colors`}
+                >
+                    [ BUILD ]
+                </button>
              </div>
          </div>
 
          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-                <div className="w-2 h-0.5 border-t border-dashed border-gray-400"></div>
-                <span className="text-[9px] font-bold uppercase text-gray-400 dark:text-neutral-600">Avg Pace</span>
-            </div>
+            {viewMode !== 'build' && (
+              <div className="flex items-center gap-1">
+                  <div className="w-2 h-0.5 border-t border-dashed border-gray-400"></div>
+                  <span className="text-[9px] font-bold uppercase text-gray-400 dark:text-neutral-600">Avg Pace</span>
+              </div>
+            )}
             <div className="flex items-center gap-1">
                 <div 
                   className="w-2 h-2 rounded-full border" 
@@ -214,13 +250,13 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
             tickFormatter={(value) => {
                 const date = new Date(value);
                 if (isMobile) {
-                    if (viewMode === 'daily') return format(date, 'd');
-                    return format(date, 'MM/d');
+                    if (viewMode === 'weekly') return format(date, 'MM/d');
+                    return format(date, 'd');
                 }
                 return format(date, 'MMM');
             }}
             // Adjust interval based on view mode
-            interval={isMobile ? (viewMode === 'daily' ? 4 : 2) : (viewMode === 'daily' ? 30 : 4)}
+            interval={isMobile ? (viewMode === 'weekly' ? 2 : 4) : (viewMode === 'weekly' ? 4 : 30)}
             tick={{ fill: '#737373', fontSize: 10, fontFamily: 'JetBrains Mono' }}
             axisLine={false}
             tickLine={false}
@@ -238,14 +274,16 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
           
           <CartesianGrid vertical={false} stroke="#262626" strokeDasharray="3 3" opacity={0.3} />
 
-          {/* Average Line - Dynamic based on view */}
-          <ReferenceLine 
-            y={currentAverage} 
-            stroke="#737373" 
-            strokeDasharray="3 3" 
-            strokeWidth={1}
-            isFront={false} 
-          />
+          {/* Average Line - Only for Daily/Weekly */}
+          {viewMode !== 'build' && (
+            <ReferenceLine 
+                y={currentAverage} 
+                stroke="#737373" 
+                strokeDasharray="3 3" 
+                strokeWidth={1}
+                isFront={false} 
+            />
+          )}
 
           {/* Output Markers (Themed) */}
           {outputDates.map((date) => (
