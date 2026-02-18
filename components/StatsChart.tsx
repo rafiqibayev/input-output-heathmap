@@ -19,7 +19,7 @@ interface StatsChartProps {
   theme: ThemeColor;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, themeHex }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
@@ -29,7 +29,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           Effort: <span className="text-white font-bold">{data.hours}h</span>
         </p>
         {data.output && (
-          <p className="text-red-500 text-xs font-bold font-mono mt-1 uppercase tracking-wider">
+          <p className="text-xs font-bold font-mono mt-1 uppercase tracking-wider" style={{ color: themeHex }}>
             ★ SHIPPED
           </p>
         )}
@@ -54,11 +54,10 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
     if (!isMobile) return data;
 
     // Mobile View: Last 30 Days
-    // Find index of today
     const today = startOfDay(new Date()).getTime();
     const todayIndex = data.findIndex(d => d.timestamp >= today);
     
-    if (todayIndex === -1) return data; // Fallback
+    if (todayIndex === -1) return data; 
 
     const startIndex = Math.max(0, todayIndex - 29);
     const endIndex = Math.min(data.length, todayIndex + 1);
@@ -79,12 +78,15 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
          </h3>
          <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">
-                <div className="w-2 h-0.5 bg-gray-400 dashed"></div>
+                <div className="w-2 h-0.5 bg-gray-400 dashed border-t border-dashed border-gray-400"></div>
                 <span className="text-[9px] font-bold uppercase text-gray-400 dark:text-neutral-600">Avg Pace</span>
             </div>
             <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-500/20 border border-red-500"></div>
-                <span className="text-[9px] font-bold uppercase text-gray-400 dark:text-neutral-600">Shipped</span>
+                <div 
+                  className="w-2 h-2 rounded-full border" 
+                  style={{ backgroundColor: `${themeHex}33`, borderColor: themeHex }}
+                ></div>
+                <span className="text-[9px] font-bold uppercase text-gray-400 dark:text-neutral-600" style={{ color: themeHex }}>Shipped</span>
             </div>
          </div>
        </div>
@@ -102,7 +104,6 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
             dataKey="date" 
             tickFormatter={(value) => {
                 const date = new Date(value);
-                // On mobile show day only (1, 5, 10...), Desktop show Month
                 if (isMobile) return format(date, 'd');
                 return format(date, 'MMM');
             }}
@@ -117,7 +118,10 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
             tickLine={false}
             allowDecimals={false}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#525252', strokeWidth: 1, strokeDasharray: '3 3' }} />
+          <Tooltip 
+            content={<CustomTooltip themeHex={themeHex} />} 
+            cursor={{ stroke: '#525252', strokeWidth: 1, strokeDasharray: '3 3' }} 
+          />
           
           <CartesianGrid vertical={false} stroke="#262626" strokeDasharray="3 3" opacity={0.3} />
 
@@ -130,12 +134,12 @@ export const StatsChart: React.FC<StatsChartProps> = ({ data, theme }) => {
             isFront={false} 
           />
 
-          {/* Output Markers */}
+          {/* Output Markers (Themed) */}
           {outputDates.map((date) => (
              <ReferenceLine 
                 key={date} 
                 x={date} 
-                stroke="#ef4444" 
+                stroke={themeHex} 
                 strokeDasharray="3 3"
                 strokeWidth={1}
              />
