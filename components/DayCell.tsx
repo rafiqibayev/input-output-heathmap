@@ -77,8 +77,17 @@ export const DayCell: React.FC<DayCellProps> = React.memo(({ data, config, isTod
       if (!textClass.includes('font-bold')) textClass += ' font-bold';
     }
 
-    // High contrast ring using accent color (with 50% opacity so it doesn't compete with shipped days)
-    customBorderStyle = { boxShadow: `inset 0 0 0 2px ${activeTheme.hex}50` };
+    if (hours === 0 && !hasOutput) {
+      ringClass = 'animate-today-pulse z-10';
+      customBorderStyle = {
+        '--pulse-color-base': `${activeTheme.hex}50`,
+        '--pulse-color-glow': `${activeTheme.hex}20`
+      } as React.CSSProperties;
+    } else {
+      ringClass = 'z-10';
+      // High contrast ring using accent color (with 50% opacity so it doesn't compete with shipped days)
+      customBorderStyle = { boxShadow: `inset 0 0 0 2px ${activeTheme.hex}50` };
+    }
   }
 
   const dayNum = date.getDate();
