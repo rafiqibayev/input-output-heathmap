@@ -1,5 +1,5 @@
 export type ViewMode = 'goal' | 'intensity';
-export type ThemeColor = 'cyan' | 'red' | 'blue' | 'green' | 'purple' | 'yellow';
+export type ThemeColor = 'cyan' | 'blue' | 'purple' | 'green' | 'red' | 'yellow';
 
 export interface DailyEntry {
   hours: number;

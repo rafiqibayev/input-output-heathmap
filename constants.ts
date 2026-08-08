@@ -10,11 +10,13 @@ export const DEFAULT_INPUT_LABEL = "Deep Work";
 export const DEFAULT_OUTPUT_LABEL = "Publish Project";
 export const DEFAULT_DAILY_GOAL = 2;
 
-export const THEMES: Record<string, { label: string; tailwind: string; hex: string }> = {
-  cyan: { label: 'Cyan', tailwind: 'cyan-500', hex: '#06B6D4' },
-  red: { label: 'Red', tailwind: 'red-600', hex: '#d40606' },
-  blue: { label: 'Blue', tailwind: 'blue-500', hex: '#0682d4' },
-  green: { label: 'Green', tailwind: 'green-600', hex: '#4ca104' }, // Adapted from #5fd406 for light mode readability
-  purple: { label: 'Purple', tailwind: 'purple-600', hex: '#5d3ff4' },
-  yellow: { label: 'Yellow', tailwind: 'yellow-600', hex: '#c79c04' }, // Adapted from #f4d03f for light mode readability
+export const THEMES: Record<string, { label: string; tailwind: string; hex: string; logo: string }> = {
+  cyan: { label: 'Cyan', tailwind: 'sky-400', hex: '#45C3FB', logo: '/logo-cyan.png' },
+  blue: { label: 'Blue', tailwind: 'blue-500', hex: '#2961F0', logo: '/logo-blue.png' },
+  purple: { label: 'Purple', tailwind: 'purple-500', hex: '#905EF5', logo: '/logo-purple.png' },
+  green: { label: 'Green', tailwind: 'emerald-500', hex: '#2DAC5E', logo: '/logo-green.png' },
+  red: { label: 'Red', tailwind: 'red-500', hex: '#E72224', logo: '/logo-red.png' },
+  yellow: { label: 'Yellow', tailwind: 'amber-400', hex: '#FEBF00', logo: '/logo-yellow.png' },
 };
+
+
